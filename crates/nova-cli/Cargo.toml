@@ -1,0 +1,12 @@
+[package]
+name = "nova-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+nova-ast = { path = "../nova-ast" }
+nova-lexer = { path = "../nova-lexer" }
+nova-parser = { path = "../nova-parser" }
+nova-analyzer = { path = "../nova-analyzer" }
+nova-codegen = { path = "../nova-codegen" }

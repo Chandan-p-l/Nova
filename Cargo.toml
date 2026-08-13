@@ -1,0 +1,16 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/nova-ast",
+    "crates/nova-lexer",
+    "crates/nova-parser",
+    "crates/nova-analyzer",
+    "crates/nova-codegen",
+    "crates/nova-cli",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["NOVA Language Core Team"]
+license = "MIT"

@@ -1,0 +1,9 @@
+[package]
+name = "nova-parser"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+nova-ast = { path = "../nova-ast" }
+nova-lexer = { path = "../nova-lexer" }

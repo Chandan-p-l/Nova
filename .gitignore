@@ -1,0 +1,4 @@
+/target
+/examples/demo_site/dist
+.DS_Store
+*.log
