@@ -1,14 +1,15 @@
 state rotationSpeed = 0.5deg
 state activeScale = 1.0
+state activeColor = "#6366f1"
 
-scene ProductShowcase {
+scene CyberShowcase {
     camera main {
         position: (0, 1.5, 5.5)
         fov: 45
     }
 
     environment {
-        background: "#080812"
+        background: "#06060c"
         lighting: "studio"
     }
 
@@ -25,8 +26,8 @@ scene ProductShowcase {
         intensity: 0.6
     }
 
-    model phone {
-        source: "./assets/model.glb"
+    model cyberCore {
+        source: "./assets/cybercore.glb"
         position: (0, 0, 0)
         scale: 1.0
 
@@ -55,18 +56,37 @@ scene ProductShowcase {
 }
 
 page Home {
+    nav navbar {
+        heading "NOVA CYBERCRAFT"
+        link "Experience"
+        link "Architecture"
+        link "GitHub"
+    }
+
     section hero {
-        heading "NOVA 3D Experience"
-        text "Build high-performance 3D websites with minimal code."
-        button "Explore Interactive Model" {
-            click => navigate("/explore")
+        heading "CyberCraft 3D Hardware"
+        text "Experience next-generation product design in native three dimensions. Powered by NOVA, the domain-specific compiled 3D language for the web."
+        button "Explore Source Code" {
+            click => open "https://github.com/Chandan-p-l/Nova.git"
         }
     }
 
-    scene ProductShowcase
+    scene CyberShowcase
 
-    card featureCard {
-        heading "Declarative 3D Scene Graph"
-        text "Create cameras, lights, materials, and GLTF models effortlessly in native NOVA syntax."
+    container grid {
+        card feature1 {
+            heading "Declarative 3D Graphs"
+            text "Zero low-level boilerplate. Declare cameras, lighting, materials, and GLTF models in native NOVA syntax."
+        }
+
+        card feature2 {
+            heading "Signal-Driven Reactivity"
+            text "Declarative state mutations automatically synchronize 3D model transforms, materials, and DOM UI elements in real-time."
+        }
+
+        card feature3 {
+            heading "Rust Compiler Engine"
+            text "Built from scratch in Rust with sub-millisecond compilation speed, strict type checking, and WebGL/WebGPU render targets."
+        }
     }
 }

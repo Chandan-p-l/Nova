@@ -12,6 +12,7 @@ pub struct CodeGenerator {
     css: String,
     js: String,
     states: std::collections::HashSet<String>,
+    elem_counter: usize,
 }
 
 impl CodeGenerator {
@@ -21,6 +22,7 @@ impl CodeGenerator {
             css: String::new(),
             js: String::new(),
             states: std::collections::HashSet::new(),
+            elem_counter: 0,
         }
     }
 
@@ -29,22 +31,39 @@ impl CodeGenerator {
         self.css.clear();
         self.js.clear();
         self.states.clear();
+        self.elem_counter = 0;
 
-        // Standard CSS Base
+        // Modern Glassmorphic CSS Engine
         self.css.push_str(
             r#"
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0a0a0f; color: #ffffff; overflow-x: hidden; }
-.nova-app-container { relative; width: 100vw; min-height: 100vh; }
+body { font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif; background: #06060c; color: #f8fafc; overflow-x: hidden; }
 .nova-canvas-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; pointer-events: auto; }
 .nova-ui-layer { position: relative; z-index: 10; pointer-events: none; width: 100%; min-height: 100vh; }
 .nova-ui-layer * { pointer-events: auto; }
-.nova-hero-section { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 2rem; }
-.nova-heading { font-size: 4rem; font-weight: 800; background: linear-gradient(135deg, #ffffff 0%, #a5b4fc 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 1.5rem; }
-.nova-text { font-size: 1.25rem; color: #94a3b8; max-width: 600px; margin-bottom: 2rem; line-height: 1.6; }
-.nova-button { padding: 1rem 2.5rem; font-size: 1.1rem; font-weight: 600; color: #ffffff; background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); border: none; border-radius: 9999px; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.4); }
-.nova-button:hover { transform: translateY(-2px) scale(1.03); box-shadow: 0 15px 30px -5px rgba(99, 102, 241, 0.6); }
-.nova-card { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 1.5rem; padding: 2rem; margin: 1rem; }
+.nova-nav { display: flex; justify-content: space-between; align-items: center; padding: 1.5rem 3rem; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255, 255, 255, 0.08); position: fixed; top: 0; left: 0; width: 100%; z-index: 50; }
+.nova-nav-links { display: flex; gap: 2rem; align-items: center; }
+.nova-link { color: #94a3b8; text-decoration: none; font-weight: 500; transition: color 0.2s ease; cursor: pointer; }
+.nova-link:hover { color: #38bdf8; }
+.nova-hero-section { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 8rem 2rem 4rem; position: relative; }
+.nova-heading { font-size: 4.5rem; font-weight: 800; tracking: -0.02em; background: linear-gradient(135deg, #ffffff 0%, #a5b4fc 50%, #38bdf8 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 1.5rem; line-height: 1.1; }
+.nova-text { font-size: 1.25rem; color: #94a3b8; max-width: 680px; margin-bottom: 2.5rem; line-height: 1.7; }
+.nova-button { padding: 1rem 2.5rem; font-size: 1.1rem; font-weight: 600; color: #ffffff; background: linear-gradient(135deg, #6366f1 0%, #06b6d4 100%); border: none; border-radius: 9999px; cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 10px 30px -5px rgba(99, 102, 241, 0.5); display: inline-flex; align-items: center; justify-content: center; gap: 0.75rem; }
+.nova-button:hover { transform: translateY(-3px) scale(1.03); box-shadow: 0 20px 40px -5px rgba(99, 102, 241, 0.7); }
+.nova-button-secondary { background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); box-shadow: none; }
+.nova-button-secondary:hover { background: rgba(255, 255, 255, 0.15); box-shadow: 0 10px 25px -5px rgba(255, 255, 255, 0.1); }
+.nova-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 2rem; max-width: 1200px; margin: 4rem auto; padding: 0 2rem; }
+.nova-card { background: rgba(15, 23, 42, 0.55); backdrop-filter: blur(24px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 1.5rem; padding: 2.5rem; transition: transform 0.3s ease, border-color 0.3s ease; }
+.nova-card:hover { transform: translateY(-6px); border-color: rgba(99, 102, 241, 0.4); }
+.nova-card .nova-heading { font-size: 1.75rem; margin-bottom: 1rem; }
+.nova-badge { display: inline-block; padding: 0.35rem 1rem; border-radius: 9999px; background: rgba(99, 102, 241, 0.15); color: #818cf8; font-size: 0.875rem; font-weight: 600; margin-bottom: 1.5rem; border: 1px solid rgba(99, 102, 241, 0.3); }
+.nova-configurator-panel { position: fixed; bottom: 2.5rem; left: 50%; transform: translateX(-50%); z-index: 40; display: flex; gap: 1rem; padding: 0.85rem 1.5rem; background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 9999px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+@media (max-width: 768px) {
+    .nova-heading { font-size: 2.75rem; }
+    .nova-nav { padding: 1rem 1.5rem; }
+    .nova-configurator-panel { width: 90%; justify-content: center; flex-wrap: wrap; }
+}
 "#,
         );
 
@@ -274,6 +293,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     fn generate_ui_component(&mut self, comp: &UIComponentItem) {
+        self.elem_counter += 1;
+        let elem_id = format!("nova-elem-{}", self.elem_counter);
+
         let tag = match comp.kind.as_str() {
             "section" => "section",
             "heading" => "h1",
@@ -282,11 +304,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             "card" => "div",
             "nav" => "nav",
             "link" => "a",
+            "container" => "div",
             _ => "div",
         };
 
         let class_name = format!("nova-{}", comp.kind);
-        self.html.push_str(&format!("<{} class=\"{}\">", tag, class_name));
+        self.html.push_str(&format!("<{} id=\"{}\" class=\"{}\">", tag, elem_id, class_name));
 
         if let Some(ref text) = comp.content {
             self.html.push_str(text);
@@ -302,6 +325,39 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         self.html.push_str(&format!("</{}>\n", tag));
+
+        for interaction in &comp.events {
+            self.js.push_str(&format!(
+                "    document.getElementById('{}')?.addEventListener('{}', () => {{\n",
+                elem_id, interaction.event
+            ));
+            for stmt in &interaction.statements {
+                match stmt {
+                    Stmt::Assignment { target, op: _, value } => {
+                        let t_str = target.join(".");
+                        let val_str = self.compile_expr(value);
+                        if self.states.contains(&t_str) {
+                            self.js.push_str(&format!(
+                                "        engine.setState('{}', {});\n",
+                                t_str, val_str
+                            ));
+                        }
+                    }
+                    Stmt::Action { name, args } => {
+                        if name == "open" || name == "navigate" {
+                            if let Some(arg) = args.first() {
+                                self.js.push_str(&format!(
+                                    "        window.location.href = {};\n",
+                                    self.compile_expr(arg)
+                                ));
+                            }
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            self.js.push_str("    });\n");
+        }
     }
 
     fn compile_expr(&self, expr: &Expr) -> String {

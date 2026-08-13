@@ -1,6 +1,6 @@
 /**
  * NOVA Browser 3D Runtime Engine (v0.1.0)
- * Modern WebGL / WebGPU 3D rendering backend with reactive state bridge.
+ * High-performance WebGL / WebGPU rendering engine with reactive state bridge.
  */
 
 import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
@@ -27,7 +27,7 @@ export class NovaEngine {
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        this.renderer.toneMappingExposure = 1.2;
+        this.renderer.toneMappingExposure = 1.3;
 
         this.canvas = this.renderer.domElement;
         this.container.appendChild(this.canvas);
@@ -77,7 +77,9 @@ export class NovaEngine {
 
     createState(key, initialValue) {
         this.stateStore.set(key, initialValue);
-        this.stateListeners.set(key, []);
+        if (!this.stateListeners.has(key)) {
+            this.stateListeners.set(key, []);
+        }
         return initialValue;
     }
 
@@ -85,6 +87,13 @@ export class NovaEngine {
         this.stateStore.set(key, newValue);
         const listeners = this.stateListeners.get(key) || [];
         listeners.forEach(cb => cb(newValue));
+    }
+
+    subscribeState(key, callback) {
+        if (!this.stateListeners.has(key)) {
+            this.stateListeners.set(key, []);
+        }
+        this.stateListeners.get(key).push(callback);
     }
 
     getState(key) {
@@ -103,6 +112,13 @@ export class NovaEngine {
     setActiveScene(name) {
         if (this.scenes.has(name)) {
             this.activeScene = this.scenes.get(name);
+        }
+    }
+
+    setTargetProperty(path, value) {
+        if (!this.activeScene) return;
+        if (path === 'camera.position.z' && this.activeScene.camera) {
+            this.activeScene.camera.position.z = value;
         }
     }
 
@@ -144,7 +160,39 @@ class NovaScene {
         this.models = new Map();
         this.lights = new Map();
 
-        this.threeScene.background = new THREE.Color('#080810');
+        this.threeScene.background = new THREE.Color('#06060c');
+        this.initStarfield();
+    }
+
+    initStarfield() {
+        const count = 1200;
+        const geometry = new THREE.BufferGeometry();
+        const positions = new Float32Array(count * 3);
+        const colors = new Float32Array(count * 3);
+
+        for (let i = 0; i < count; i++) {
+            positions[i * 3] = (Math.random() - 0.5) * 80;
+            positions[i * 3 + 1] = (Math.random() - 0.5) * 80;
+            positions[i * 3 + 2] = (Math.random() - 0.5) * 80;
+
+            colors[i * 3] = 0.5 + Math.random() * 0.5;
+            colors[i * 3 + 1] = 0.6 + Math.random() * 0.4;
+            colors[i * 3 + 2] = 1.0;
+        }
+
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+        const material = new THREE.PointsMaterial({
+            size: 0.15,
+            vertexColors: true,
+            transparent: true,
+            opacity: 0.8,
+        });
+
+        const starfield = new THREE.Points(geometry, material);
+        this.starfield = starfield;
+        this.threeScene.add(starfield);
     }
 
     setEnvironment(props) {
@@ -187,8 +235,7 @@ class NovaScene {
         this.threeScene.add(light);
         this.lights.set(name, light);
 
-        // Add soft secondary ambient light
-        const amb = new THREE.AmbientLight(0xffffff, 0.6);
+        const amb = new THREE.AmbientLight(0x6366f1, 0.5);
         this.threeScene.add(amb);
 
         return light;
@@ -210,7 +257,7 @@ class NovaScene {
 
         const mat = new THREE.MeshStandardMaterial({
             color: 0x6366f1,
-            metalness: 0.3,
+            metalness: 0.8,
             roughness: 0.2,
         });
 
@@ -223,6 +270,9 @@ class NovaScene {
     }
 
     update(delta, elapsedTime) {
+        if (this.starfield) {
+            this.starfield.rotation.y = elapsedTime * 0.02;
+        }
         this.models.forEach(model => model.update(delta, elapsedTime));
     }
 }
@@ -234,27 +284,40 @@ class NovaModel {
         this.novaScene = novaScene;
         this.eventListeners = new Map();
 
-        // Create fallback procedural geometry immediately (3D Glowing Product Mesh)
         const group = new THREE.Group();
 
-        const mainGeo = new THREE.IcosahedronGeometry(1.2, 2);
+        // 3D Core Geometry: Futuristic Cyber Gem
+        const mainGeo = new THREE.IcosahedronGeometry(1.4, 1);
         const mainMat = new THREE.MeshStandardMaterial({
             color: 0x6366f1,
-            metalness: 0.8,
+            metalness: 0.85,
             roughness: 0.15,
             emissive: 0x312e81,
-            emissiveIntensity: 0.5,
+            emissiveIntensity: 0.6,
+            wireframe: false,
         });
         const mainMesh = new THREE.Mesh(mainGeo, mainMat);
+        this.mainMesh = mainMesh;
+        this.mainMat = mainMat;
         group.add(mainMesh);
 
-        // Outer Wireframe Ring
-        const ringGeo = new THREE.TorusGeometry(1.8, 0.04, 16, 100);
-        const ringMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, wireframe: true });
-        const ringMesh = new THREE.Mesh(ringGeo, ringMat);
-        ringMesh.rotation.x = Math.PI / 3;
-        group.add(ringMesh);
-        this.ringMesh = ringMesh;
+        // Orbiting Cyber Ring 1
+        const ring1Geo = new THREE.TorusGeometry(2.1, 0.04, 16, 100);
+        const ring1Mat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, wireframe: true });
+        const ring1Mesh = new THREE.Mesh(ring1Geo, ring1Mat);
+        ring1Mesh.rotation.x = Math.PI / 3;
+        group.add(ring1Mesh);
+        this.ring1Mesh = ring1Mesh;
+        this.ring1Mat = ring1Mat;
+
+        // Orbiting Cyber Ring 2
+        const ring2Geo = new THREE.TorusGeometry(2.6, 0.03, 16, 100);
+        const ring2Mat = new THREE.MeshBasicMaterial({ color: 0xa855f7, wireframe: true });
+        const ring2Mesh = new THREE.Mesh(ring2Geo, ring2Mat);
+        ring2Mesh.rotation.y = Math.PI / 4;
+        group.add(ring2Mesh);
+        this.ring2Mesh = ring2Mesh;
+        this.ring2Mat = ring2Mat;
 
         group.__novaModel = this;
         this.group = group;
@@ -265,6 +328,21 @@ class NovaModel {
 
         this.novaScene.threeScene.add(group);
         this.novaScene.engine.interactiveObjects.push(group);
+
+        // Listen for color state mutations if registered
+        this.novaScene.engine.subscribeState('activeColor', (newColor) => {
+            this.setColor(newColor);
+        });
+    }
+
+    setColor(colorHex) {
+        if (this.mainMat) {
+            this.mainMat.color.set(colorHex);
+            this.mainMat.emissive.set(colorHex);
+        }
+        if (this.ring1Mat) {
+            this.ring1Mat.color.set(colorHex);
+        }
     }
 
     get rotation() {
@@ -300,8 +378,14 @@ class NovaModel {
     }
 
     update(delta, elapsedTime) {
-        if (this.ringMesh) {
-            this.ringMesh.rotation.z += delta * 0.5;
+        if (this.ring1Mesh) {
+            this.ring1Mesh.rotation.z += delta * 0.8;
+        }
+        if (this.ring2Mesh) {
+            this.ring2Mesh.rotation.x += delta * 0.6;
+        }
+        if (this.mainMesh) {
+            this.mainMesh.rotation.x = Math.sin(elapsedTime * 0.5) * 0.2;
         }
     }
 }
